@@ -352,7 +352,7 @@ define([
         var zoomToBtn = document.createElement('input');
         zoomToTd.appendChild(zoomToBtn);
         zoomToBtn.type = 'button';
-        zoomToBtn.value = 'Highlight';
+        zoomToBtn.value = 'Zoom';
         zoomToBtn.className = 'cesium-cesiumInspector-pickButton';
         zoomToBtn.setAttribute('data-bind', 'click: zoomToIonTerrain, enable: ionTerrainAssetStr');
 

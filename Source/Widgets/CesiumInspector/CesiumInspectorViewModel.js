@@ -189,6 +189,13 @@ define([
         this._ionTerrainAssetId = 1;
 
         /**
+         * Gets or sets shading in terrain asset state.  This property is observable.
+         * @type {Boolean}
+         * @default false
+         */
+        this.highlightTerrainLOD = false;
+
+        /**
          * Gets or sets the show wireframe state.  This property is observable.
          * @type {Boolean}
          * @default false
@@ -347,6 +354,7 @@ define([
             'filterTile',
             'useIonTerrain',
             'ionTerrainAssetStr',
+            'highlightTerrainLOD',
             'wireframe',
             'globeDepth',
             'pickDepth',
@@ -684,6 +692,16 @@ define([
                 // Restore the original terrain provider
                 that._scene.terrainProvider = that._originalTerrainProvider;
                 that._originalTerrainProvider = undefined;
+            }
+        });
+
+        this._highlightTerrainLODSubscription = knockout.getObservable(this, 'highlightTerrainLOD').subscribe(function(val) {
+            if(val) {
+                that._scene.globe._surface.forEachRenderedTile(function (tile) {
+                    // Generate primitives
+                });
+            } else {
+                // Disable
             }
         });
     }
@@ -1097,6 +1115,7 @@ define([
         this._pickTileActiveSubscription.dispose();
         this._sanitizeIonAssetIdSubscription.dispose();
         this._enableIonTerrainSubscription.dispose();
+        this._highlightTerrainLODSubscription.dispose();
         return destroyObject(this);
     };
 

@@ -356,6 +356,16 @@ define([
         zoomToBtn.className = 'cesium-cesiumInspector-pickButton';
         zoomToBtn.setAttribute('data-bind', 'click: zoomToIonTerrain, enable: ionTerrainAssetStr');
 
+        // Button to zoom to terrain asset
+        var highlightTerrainTd = document.createElement('td');
+        itTr.appendChild(highlightTerrainTd);
+        var highlightTerrainBtn = document.createElement('input');
+        highlightTerrainTd.appendChild(highlightTerrainBtn);
+        highlightTerrainTd.appendChild(document.createTextNode('Highlight'));
+        highlightTerrainBtn.type = 'checkbox';
+        highlightTerrainBtn.className = 'cesium-cesiumInspector-pickButton';
+        highlightTerrainBtn.setAttribute('data-bind', 'checked: highlightTerrainLOD, enable: ionTerrainAssetStr');
+
         var wireframe = document.createElement('div');
         terrainSection.appendChild(wireframe);
         var wCheckbox = document.createElement('input');

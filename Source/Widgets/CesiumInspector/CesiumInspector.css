@@ -94,7 +94,7 @@
     font-weight: bold;
 }
 
-.cesium-cesiumInspector-pickSection {
+.cesium-cesiumInspector-subSection {
     border: 1px solid #aaa;
     border-radius: 5px;
     padding: 3px;
@@ -118,4 +118,8 @@
 
 .cesium-cesiumInspector-relativeText {
     padding-top: 10px;
+}
+
+.cesium-cesiumInspector-assetIdText {
+    width: 60px;
 }

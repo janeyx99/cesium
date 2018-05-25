@@ -1,9 +1,15 @@
 define([
+        '../../Core/CesiumTerrainProvider',
         '../../Core/defined',
         '../../Core/defineProperties',
         '../../Core/destroyObject',
         '../../Core/DeveloperError',
+        '../../Core/Ion',
+        '../../Core/IonResource',
+        '../../Core/Matrix4',
         '../../Core/Rectangle',
+        '../../Core/Resource',
+        '../../Core/sampleTerrainMostDetailed',
         '../../Core/ScreenSpaceEventHandler',
         '../../Core/ScreenSpaceEventType',
         '../../Scene/DebugModelMatrixPrimitive',
@@ -12,11 +18,17 @@ define([
         '../../ThirdParty/knockout',
         '../createCommand'
     ], function(
+        CesiumTerrainProvider,
         defined,
         defineProperties,
         destroyObject,
         DeveloperError,
+        Ion,
+        IonResource,
+        Matrix4,
         Rectangle,
+        Resource,
+        sampleTerrainMostDetailed,
         ScreenSpaceEventHandler,
         ScreenSpaceEventType,
         DebugModelMatrixPrimitive,
@@ -93,6 +105,7 @@ define([
         this._modelMatrixPrimitive = undefined;
         this._performanceDisplay = undefined;
         this._performanceContainer = performanceContainer;
+        this._originalTerrainProvider = undefined;
 
         var globe = this._scene.globe;
         globe.depthTestAgainstTerrain = true;
@@ -159,6 +172,21 @@ define([
          * @default false
          */
         this.filterTile = false;
+
+        /**
+         * Gets or sets using an ion asset for terrain state.  This property is observable.
+         * @type {Boolean}
+         * @default false
+         */
+        this.useIonTerrain = false;
+
+        /**
+         * Gets or sets ion terrain asset id state.  This property is observable.
+         * @type {String}
+         * @default ""
+         */
+        this.ionTerrainAssetStr = '';
+        this._ionTerrainAssetId = 1;
 
         /**
          * Gets or sets the show wireframe state.  This property is observable.
@@ -317,6 +345,8 @@ define([
             'filterPrimitive',
             'tileBoundingSphere',
             'filterTile',
+            'useIonTerrain',
+            'ionTerrainAssetStr',
             'wireframe',
             'globeDepth',
             'pickDepth',
@@ -586,6 +616,75 @@ define([
 
         this._removePostRenderEvent = scene.postRender.addEventListener(function() {
             that._update();
+        });
+
+        function updateIonTerrainProvider() {
+            // Reset LOD to normal setting to avoid rendering crash.
+            that.suspendUpdates = false;
+            that._scene.terrainProvider = new CesiumTerrainProvider({
+                url: IonResource.fromAssetId(that._ionTerrainAssetId)
+            });
+        }
+
+        this._sanitizeIonAssetIdSubscription = knockout.getObservable(this, 'ionTerrainAssetStr').subscribe(function(val) {
+            that._ionTerrainAssetId = parseInt(val, 10);
+            if(isNaN(that._ionTerrainAssetId)) {
+                // Set a safe default, but no need to render again.
+                that._ionTerrainAssetId = 1; // Use Cesium World Terrain
+            } else {
+                // Update terrain provider
+                updateIonTerrainProvider();
+            }
+        });
+
+        this._zoomToIonTerrain = createCommand(function() {
+            Resource.fetchJson(Ion.defaultServer.url + 'assets/' + that._ionTerrainAssetId + '/extent?access_token=' + Ion.defaultAccessToken)
+            .then(function(extent) {
+                // This code is basically copied from AnalyticalGraphicsInc/agi-cesium-cloud/public/Core/flyToAsset.js#L146
+                // It would be nice if this was built into Camera, or something.
+                var camera = that._scene.camera;
+                var scene = that._scene;
+                var globe = scene.globe;
+
+                var cartographics = [
+                    Rectangle.center(extent),
+                    Rectangle.southeast(extent),
+                    Rectangle.southwest(extent),
+                    Rectangle.northeast(extent),
+                    Rectangle.northwest(extent)
+                ];
+
+                return sampleTerrainMostDetailed(globe.terrainProvider, cartographics)
+                    .then(function (positionsOnTerrain) {
+                        var maxHeight = -Number.MAX_VALUE;
+                        positionsOnTerrain.forEach(function (p) {
+                            maxHeight = Math.max(p.height, maxHeight);
+                        });
+
+                        var finalPosition = globe.ellipsoid.cartesianToCartographic(camera.getRectangleCameraCoordinates(extent));
+                        finalPosition.height += maxHeight;
+
+                        camera.flyTo({
+                            destination: globe.ellipsoid.cartographicToCartesian(finalPosition),
+                            endTransform: Matrix4.IDENTITY,
+                            duration: 1
+                        });
+                    });
+
+            });
+        });
+
+        this._enableIonTerrainSubscription = knockout.getObservable(this, 'useIonTerrain').subscribe(function(val) {
+            // See updateIonTerrainProvider()
+            that.suspendUpdates = false;
+            if(val) {
+                that._originalTerrainProvider = that._scene.terrainProvider;
+                updateIonTerrainProvider();
+            } else {
+                // Restore the original terrain provider
+                that._scene.terrainProvider = that._originalTerrainProvider;
+                that._originalTerrainProvider = undefined;
+            }
         });
     }
 
@@ -924,6 +1023,18 @@ define([
                     this._tile = undefined;
                 }
             }
+        },
+
+        /**
+         * Gets the command to highlight terrain loaded from Ion
+         * @memberof CesiumInspectorViewModel.prototype
+         *
+         * @type {Command}
+         */
+        zoomToIonTerrain : {
+            get : function() {
+                return this._zoomToIonTerrain;
+            }
         }
     });
 
@@ -984,6 +1095,8 @@ define([
         this._filterTileSubscription.dispose();
         this._pickPrimitiveActiveSubscription.dispose();
         this._pickTileActiveSubscription.dispose();
+        this._sanitizeIonAssetIdSubscription.dispose();
+        this._enableIonTerrainSubscription.dispose();
         return destroyObject(this);
     };
 

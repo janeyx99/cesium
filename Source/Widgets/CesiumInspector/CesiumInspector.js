@@ -173,7 +173,7 @@ define([
         primitivesSection.setAttribute('data-bind', 'css: {"cesium-cesiumInspector-show" : primitivesVisible, "cesium-cesiumInspector-hide" : !primitivesVisible}');
         panel.appendChild(primitivesSection);
         var pickPrimRequired = document.createElement('div');
-        pickPrimRequired.className = 'cesium-cesiumInspector-pickSection';
+        pickPrimRequired.className = 'cesium-cesiumInspector-subSection';
         primitivesSection.appendChild(pickPrimRequired);
 
         var pickPrimitiveButton = document.createElement('input');
@@ -226,7 +226,7 @@ define([
         terrainSection.setAttribute('data-bind', 'css: {"cesium-cesiumInspector-show" : terrainVisible, "cesium-cesiumInspector-hide" :  !terrainVisible}');
         panel.appendChild(terrainSection);
         var pickTileRequired = document.createElement('div');
-        pickTileRequired.className = 'cesium-cesiumInspector-pickSection';
+        pickTileRequired.className = 'cesium-cesiumInspector-subSection';
         terrainSection.appendChild(pickTileRequired);
         var pickTileButton = document.createElement('input');
         pickTileButton.type = 'button';
@@ -317,6 +317,44 @@ define([
         rCheck.setAttribute('data-bind', 'checked: filterTile, enable: hasPickedTile');
         renderTile.appendChild(rCheck);
         renderTile.appendChild(document.createTextNode('Show only selected'));
+
+        var ionTerrainSection = document.createElement('div');
+        terrainSection.appendChild(ionTerrainSection);
+        ionTerrainSection.className = 'cesium-cesiumInspector-subSection';
+
+        var useIonTerrain = document.createElement('div');
+        ionTerrainSection.appendChild(useIonTerrain);
+        var itCheckbox = document.createElement('input');
+        itCheckbox.type = 'checkbox';
+        itCheckbox.setAttribute('data-bind', 'checked: useIonTerrain');
+        useIonTerrain.appendChild(itCheckbox);
+        useIonTerrain.appendChild(document.createTextNode('Use Terrain asset from Ion'));
+
+        var ionTerrainInputTable = document.createElement('table');
+        ionTerrainSection.appendChild(ionTerrainInputTable);
+        ionTerrainInputTable.setAttribute('data-bind', 'visible: useIonTerrain');
+        var itTr = document.createElement('tr');
+        ionTerrainInputTable.appendChild(itTr);
+
+        // Text field for asset id
+        var assetIdTd = document.createElement('td');
+        itTr.appendChild(assetIdTd);
+        var assetIdText = document.createElement('input');
+        assetIdTd.appendChild(assetIdText);
+        assetIdText.type = 'text';
+        assetIdText.placeholder = 'Asset ID';
+        assetIdText.className = 'cesium-cesiumInspector-assetIdText';
+        assetIdText.setAttribute('data-bind', 'value: ionTerrainAssetStr');
+
+        // Button to zoom to terrain asset
+        var zoomToTd = document.createElement('td');
+        itTr.appendChild(zoomToTd);
+        var zoomToBtn = document.createElement('input');
+        zoomToTd.appendChild(zoomToBtn);
+        zoomToBtn.type = 'button';
+        zoomToBtn.value = 'Highlight';
+        zoomToBtn.className = 'cesium-cesiumInspector-pickButton';
+        zoomToBtn.setAttribute('data-bind', 'click: zoomToIonTerrain, enable: ionTerrainAssetStr');
 
         var wireframe = document.createElement('div');
         terrainSection.appendChild(wireframe);

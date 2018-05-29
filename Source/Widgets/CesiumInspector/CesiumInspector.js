@@ -364,7 +364,7 @@ define([
         highlightTerrainTd.appendChild(document.createTextNode('Highlight'));
         highlightTerrainBtn.type = 'checkbox';
         highlightTerrainBtn.className = 'cesium-cesiumInspector-pickButton';
-        highlightTerrainBtn.setAttribute('data-bind', 'checked: highlightTerrainLOD, enable: ionTerrainAssetStr');
+        highlightTerrainBtn.setAttribute('data-bind', 'checked: highlightTerrain, enable: ionTerrainAssetStr');
 
         var wireframe = document.createElement('div');
         terrainSection.appendChild(wireframe);

@@ -1,38 +1,50 @@
 define([
+        '../../Core/Cartesian3',
         '../../Core/CesiumTerrainProvider',
+        '../../Core/ColorGeometryInstanceAttribute',
         '../../Core/defined',
         '../../Core/defineProperties',
         '../../Core/destroyObject',
         '../../Core/DeveloperError',
+        '../../Core/GeometryInstance',
         '../../Core/Ion',
         '../../Core/IonResource',
         '../../Core/Matrix4',
         '../../Core/Rectangle',
+        '../../Core/RectangleGeometry',
         '../../Core/Resource',
         '../../Core/sampleTerrainMostDetailed',
         '../../Core/ScreenSpaceEventHandler',
         '../../Core/ScreenSpaceEventType',
         '../../Scene/DebugModelMatrixPrimitive',
+        '../../Scene/GroundPrimitive',
         '../../Scene/PerformanceDisplay',
+        '../../Scene/PerInstanceColorAppearance',
         '../../Scene/TileCoordinatesImageryProvider',
         '../../ThirdParty/knockout',
         '../createCommand'
     ], function(
+        Cartesian3,
         CesiumTerrainProvider,
+        ColorGeometryInstanceAttribute,
         defined,
         defineProperties,
         destroyObject,
         DeveloperError,
+        GeometryInstance,
         Ion,
         IonResource,
         Matrix4,
         Rectangle,
+        RectangleGeometry,
         Resource,
         sampleTerrainMostDetailed,
         ScreenSpaceEventHandler,
         ScreenSpaceEventType,
         DebugModelMatrixPrimitive,
+        GroundPrimitive,
         PerformanceDisplay,
+        PerInstanceColorAppearance,
         TileCoordinatesImageryProvider,
         knockout,
         createCommand) {
@@ -106,6 +118,8 @@ define([
         this._performanceDisplay = undefined;
         this._performanceContainer = performanceContainer;
         this._originalTerrainProvider = undefined;
+        this._terrainExtentPromise = undefined;
+        this._terrainPrimitive = undefined;
 
         var globe = this._scene.globe;
         globe.depthTestAgainstTerrain = true;
@@ -193,7 +207,7 @@ define([
          * @type {Boolean}
          * @default false
          */
-        this.highlightTerrainLOD = false;
+        this.highlightTerrain = false;
 
         /**
          * Gets or sets the show wireframe state.  This property is observable.
@@ -354,7 +368,7 @@ define([
             'filterTile',
             'useIonTerrain',
             'ionTerrainAssetStr',
-            'highlightTerrainLOD',
+            'highlightTerrain',
             'wireframe',
             'globeDepth',
             'pickDepth',
@@ -629,8 +643,36 @@ define([
         function updateIonTerrainProvider() {
             // Reset LOD to normal setting to avoid rendering crash.
             that.suspendUpdates = false;
+            // Reset highlighting
+            that.highlightTerrain = false;
+
             that._scene.terrainProvider = new CesiumTerrainProvider({
                 url: IonResource.fromAssetId(that._ionTerrainAssetId)
+            });
+
+            that._terrainExtentPromise = Resource.fetchJson(
+                // We need the extents for camera zoom and highlighting terrain area.
+                Ion.defaultServer.url + 'assets/' + that._ionTerrainAssetId + '/extent?access_token=' + Ion.defaultAccessToken
+            );
+
+            that._terrainExtentPromise.then(function(rectangle) {
+                if(defined(that._terrainPrimitive)) {
+                    that._scene.primitives.remove(that._terrainPrimitive);
+                }
+
+                that._terrainPrimitive = new GroundPrimitive({
+                    geometryInstances: new GeometryInstance({
+                        geometry: new RectangleGeometry({
+                            rectangle: rectangle
+                        }),
+                        attributes: {
+                            color: new ColorGeometryInstanceAttribute(0, 1.0, 1.0, 0.35)
+                        }
+                    }),
+                    appearance : new PerInstanceColorAppearance()
+                });
+
+                that._terrainPrimitive.show = false;
             });
         }
 
@@ -646,8 +688,7 @@ define([
         });
 
         this._zoomToIonTerrain = createCommand(function() {
-            Resource.fetchJson(Ion.defaultServer.url + 'assets/' + that._ionTerrainAssetId + '/extent?access_token=' + Ion.defaultAccessToken)
-            .then(function(extent) {
+            that._terrainExtentPromise.then(function(extent) {
                 // This code is basically copied from AnalyticalGraphicsInc/agi-cesium-cloud/public/Core/flyToAsset.js#L146
                 // It would be nice if this was built into Camera, or something.
                 var camera = that._scene.camera;
@@ -695,14 +736,12 @@ define([
             }
         });
 
-        this._highlightTerrainLODSubscription = knockout.getObservable(this, 'highlightTerrainLOD').subscribe(function(val) {
-            if(val) {
-                that._scene.globe._surface.forEachRenderedTile(function (tile) {
-                    // Generate primitives
-                });
-            } else {
-                // Disable
+        this._highlightTerrainSubscription = knockout.getObservable(this, 'highlightTerrain').subscribe(function(enable) {
+            if(!that._scene.primitives.contains(that._terrainPrimitive)) {
+                that._scene.primitives.add(that._terrainPrimitive);
             }
+            that._terrainPrimitive.show = enable;
+            that._scene.requestRender();
         });
     }
 
@@ -1115,7 +1154,7 @@ define([
         this._pickTileActiveSubscription.dispose();
         this._sanitizeIonAssetIdSubscription.dispose();
         this._enableIonTerrainSubscription.dispose();
-        this._highlightTerrainLODSubscription.dispose();
+        this._highlightTerrainSubscription.dispose();
         return destroyObject(this);
     };
 

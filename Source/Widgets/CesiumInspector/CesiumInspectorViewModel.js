@@ -188,19 +188,12 @@ define([
         this.filterTile = false;
 
         /**
-         * Gets or sets using an ion asset for terrain state.  This property is observable.
-         * @type {Boolean}
-         * @default false
-         */
-        this.useIonTerrain = false;
-
-        /**
          * Gets or sets ion terrain asset id state.  This property is observable.
          * @type {String}
          * @default ""
          */
         this.ionTerrainAssetStr = '';
-        this._ionTerrainAssetId = 1;
+        this._ionTerrainAssetId = undefined;
 
         /**
          * Gets or sets shading in terrain asset state.  This property is observable.
@@ -366,7 +359,6 @@ define([
             'filterPrimitive',
             'tileBoundingSphere',
             'filterTile',
-            'useIonTerrain',
             'ionTerrainAssetStr',
             'highlightTerrain',
             'wireframe',
@@ -640,12 +632,37 @@ define([
             that._update();
         });
 
-        function updateIonTerrainProvider() {
+        this._sanitizeIonAssetIdSubscription = knockout.getObservable(this, 'ionTerrainAssetStr').subscribe(function(val) {
+            var id = parseInt(val, 10);
+            if(isNaN(id)) {
+                that.ionTerrainAssetStr = '';
+                that._ionTerrainAssetId = undefined;
+                _updateTerrainProvider();
+            } else if(id !== that._ionTerrainAssetId) {
+                that._ionTerrainAssetId = id;
+                _updateTerrainProvider();
+            } else {
+                that.ionTerrainAssetStr = id.toString();
+            }
+        });
+
+        function _updateTerrainProvider() {
             // Reset LOD to normal setting to avoid rendering crash.
             that.suspendUpdates = false;
-            // Reset highlighting
+
             that.highlightTerrain = false;
 
+            if(!defined(that._ionTerrainAssetId)) {
+                that._scene.terrainProvider = that._originalTerrainProvider;
+                that._originalTerrainProvider = undefined;
+                return;
+            }
+
+            if(!defined(that._originalTerrainProvider)) {
+                // This is the first time we're using an ion asset, so save the current
+                // terrain provider for later.
+                that._originalTerrainProvider = that._scene.terrainProvider;
+            }
             that._scene.terrainProvider = new CesiumTerrainProvider({
                 url: IonResource.fromAssetId(that._ionTerrainAssetId)
             });
@@ -675,17 +692,6 @@ define([
                 that._terrainPrimitive.show = false;
             });
         }
-
-        this._sanitizeIonAssetIdSubscription = knockout.getObservable(this, 'ionTerrainAssetStr').subscribe(function(val) {
-            that._ionTerrainAssetId = parseInt(val, 10);
-            if(isNaN(that._ionTerrainAssetId)) {
-                // Set a safe default, but no need to render again.
-                that._ionTerrainAssetId = 1; // Use Cesium World Terrain
-            } else {
-                // Update terrain provider
-                updateIonTerrainProvider();
-            }
-        });
 
         this._zoomToIonTerrain = createCommand(function() {
             that._terrainExtentPromise.then(function(extent) {
@@ -721,19 +727,6 @@ define([
                     });
 
             });
-        });
-
-        this._enableIonTerrainSubscription = knockout.getObservable(this, 'useIonTerrain').subscribe(function(val) {
-            // See updateIonTerrainProvider()
-            that.suspendUpdates = false;
-            if(val) {
-                that._originalTerrainProvider = that._scene.terrainProvider;
-                updateIonTerrainProvider();
-            } else {
-                // Restore the original terrain provider
-                that._scene.terrainProvider = that._originalTerrainProvider;
-                that._originalTerrainProvider = undefined;
-            }
         });
 
         this._highlightTerrainSubscription = knockout.getObservable(this, 'highlightTerrain').subscribe(function(enable) {
@@ -1153,7 +1146,6 @@ define([
         this._pickPrimitiveActiveSubscription.dispose();
         this._pickTileActiveSubscription.dispose();
         this._sanitizeIonAssetIdSubscription.dispose();
-        this._enableIonTerrainSubscription.dispose();
         this._highlightTerrainSubscription.dispose();
         return destroyObject(this);
     };

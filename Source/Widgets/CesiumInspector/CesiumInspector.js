@@ -322,17 +322,8 @@ define([
         terrainSection.appendChild(ionTerrainSection);
         ionTerrainSection.className = 'cesium-cesiumInspector-subSection';
 
-        var useIonTerrain = document.createElement('div');
-        ionTerrainSection.appendChild(useIonTerrain);
-        var itCheckbox = document.createElement('input');
-        itCheckbox.type = 'checkbox';
-        itCheckbox.setAttribute('data-bind', 'checked: useIonTerrain');
-        useIonTerrain.appendChild(itCheckbox);
-        useIonTerrain.appendChild(document.createTextNode('Use Terrain asset from Ion'));
-
         var ionTerrainInputTable = document.createElement('table');
         ionTerrainSection.appendChild(ionTerrainInputTable);
-        ionTerrainInputTable.setAttribute('data-bind', 'visible: useIonTerrain');
         var itTr = document.createElement('tr');
         ionTerrainInputTable.appendChild(itTr);
 
@@ -344,9 +335,9 @@ define([
         assetIdText.type = 'text';
         assetIdText.placeholder = 'Asset ID';
         assetIdText.className = 'cesium-cesiumInspector-assetIdText';
-        assetIdText.setAttribute('data-bind', 'value: ionTerrainAssetStr');
+        assetIdText.setAttribute('data-bind', 'textInput: ionTerrainAssetStr');
 
-        // Button to zoom to terrain asset
+        // Button to fly the camra to terrain asset
         var zoomToTd = document.createElement('td');
         itTr.appendChild(zoomToTd);
         var zoomToBtn = document.createElement('input');
@@ -356,7 +347,7 @@ define([
         zoomToBtn.className = 'cesium-cesiumInspector-pickButton';
         zoomToBtn.setAttribute('data-bind', 'click: zoomToIonTerrain, enable: ionTerrainAssetStr');
 
-        // Button to zoom to terrain asset
+        // Button to highlight terrain asset
         var highlightTerrainTd = document.createElement('td');
         itTr.appendChild(highlightTerrainTd);
         var highlightTerrainBtn = document.createElement('input');

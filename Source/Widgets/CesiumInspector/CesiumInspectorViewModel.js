@@ -1,6 +1,7 @@
 define([
         '../../Core/Cartesian3',
         '../../Core/CesiumTerrainProvider',
+        '../../Core/Color',
         '../../Core/ColorGeometryInstanceAttribute',
         '../../Core/defined',
         '../../Core/defineProperties',
@@ -21,12 +22,14 @@ define([
         '../../Scene/GroundPrimitive',
         '../../Scene/PerformanceDisplay',
         '../../Scene/PerInstanceColorAppearance',
+        '../../Scene/PrimitiveCollection',
         '../../Scene/TileCoordinatesImageryProvider',
         '../../ThirdParty/knockout',
         '../createCommand'
     ], function(
         Cartesian3,
         CesiumTerrainProvider,
+        Color,
         ColorGeometryInstanceAttribute,
         defined,
         defineProperties,
@@ -47,6 +50,7 @@ define([
         GroundPrimitive,
         PerformanceDisplay,
         PerInstanceColorAppearance,
+        PrimitiveCollection,
         TileCoordinatesImageryProvider,
         knockout,
         createCommand) {
@@ -123,6 +127,10 @@ define([
         this._terrainExtentPromise = undefined;
         this._terrainPrimitivePromise = undefined;
         this._terrainPrimitive = undefined;
+
+        this._LODColorRamp = undefined;
+        this._htLODPrimitives = new PrimitiveCollection({show: false});
+        this._scene.primitives.add(this._htLODPrimitives);
 
         var globe = this._scene.globe;
         globe.depthTestAgainstTerrain = true;
@@ -204,6 +212,13 @@ define([
          * @default false
          */
         this.highlightTerrain = false;
+
+        /**
+         * Gets or sets shading in terrain LOD state.  This property is observable.
+         * @type {Boolean}
+         * @default false
+         */
+        this.highlightLOD = false;
 
         /**
          * Gets or sets the show wireframe state.  This property is observable.
@@ -364,6 +379,7 @@ define([
             'filterTile',
             'ionTerrainAssetStr',
             'highlightTerrain',
+            'highlightLOD',
             'wireframe',
             'globeDepth',
             'pickDepth',
@@ -765,6 +781,66 @@ define([
                 that._scene.requestRender();
             });
         });
+
+        this._highlightLODSubscription = knockout.getObservable(this, 'highlightLOD').subscribe(function(enable) {
+            if(enable) {
+                _addLODPrimitives();
+                that._scene.camera.moveEnd.addEventListener(_addLODPrimitives);
+                that._htLODPrimitives.show = true;
+            } else {
+                that._scene.camera.moveEnd.removeEventListener(_addLODPrimitives);
+                that._htLODPrimitives.show = false;
+                that._htLODPrimitives.removeAll();
+            }
+            that._scene.requestRender();
+        });
+        function _getColor(level) {
+            var MAX_ZOOM_LEVEL = 24.0;
+            var normLevel = level / MAX_ZOOM_LEVEL;
+            if(!defined(that._LODColorRamp)) {
+                // Sample from a small image to figure out color of tile
+                var ramp = document.createElement('canvas');
+                ramp.width = 100;
+                ramp.height = 1;
+                var ctx = ramp.getContext('2d');
+
+                var grd = ctx.createLinearGradient(0, 0, 100, 0);
+                grd.addColorStop(0.0,  '#000000'); //black
+                grd.addColorStop(0.30, '#2747E0'); //blue
+                grd.addColorStop(0.45, '#D33B7D'); //pink
+                grd.addColorStop(0.50, '#D33038'); //red
+                grd.addColorStop(0.56, '#FF9742'); //orange
+                grd.addColorStop(0.75, '#ffd700'); //yellow
+                grd.addColorStop(1.0,  '#ffffff'); //white
+
+                ctx.fillStyle = grd;
+                ctx.fillRect(0, 0, 100, 1);
+
+                that._LODColorRamp = ctx;
+            }
+
+            var color = that._LODColorRamp.getImageData(normLevel * 100, 0, 1, 1).data;
+            return new Color(color[0] / 255.0, color[1] / 255.0, color[2] / 255.0, 0.75);
+        }
+        function _addLODPrimitives() {
+            that._htLODPrimitives.removeAll();
+            that._scene.globe._surface.forEachRenderedTile(function(tile) {
+                var extent = tile._rectangle;
+                var color = _getColor(tile._level);
+                var prim = new GroundPrimitive({
+                    geometryInstances: new GeometryInstance({
+                        geometry: new RectangleGeometry({
+                            rectangle: extent
+                        }),
+                        attributes: {
+                            color: new ColorGeometryInstanceAttribute.fromColor(color)
+                        }
+                    }),
+                    appearance : new PerInstanceColorAppearance()
+                });
+                that._htLODPrimitives.add(prim);
+            });
+        }
     }
 
     defineProperties(CesiumInspectorViewModel.prototype, {
@@ -1176,6 +1252,7 @@ define([
         this._pickTileActiveSubscription.dispose();
         this._sanitizeIonAssetIdSubscription.dispose();
         this._highlightTerrainSubscription.dispose();
+        this._highlightLODSubscription.dispose();
         return destroyObject(this);
     };
 

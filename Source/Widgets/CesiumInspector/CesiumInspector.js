@@ -365,6 +365,14 @@ define([
         wireframe.appendChild(wCheckbox);
         wireframe.appendChild(document.createTextNode('Wireframe'));
 
+        var highlightLOD = document.createElement('div');
+        terrainSection.appendChild(highlightLOD);
+        var lodCheckbox = document.createElement('input');
+        lodCheckbox.type = 'checkbox';
+        lodCheckbox.setAttribute('data-bind', 'checked: highlightLOD');
+        highlightLOD.appendChild(lodCheckbox);
+        highlightLOD.appendChild(document.createTextNode('Highlight LOD levels'));
+
         var suspendUpdates = document.createElement('div');
         terrainSection.appendChild(suspendUpdates);
         var upCheckbox = document.createElement('input');

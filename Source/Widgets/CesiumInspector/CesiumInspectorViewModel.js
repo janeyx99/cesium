@@ -676,8 +676,9 @@ define([
             // Reset LOD to normal setting to avoid rendering crash.
             that.suspendUpdates = false;
             that.highlightTerrain = false;
+            that.highlightLOD = false;
 
-            if (!defined(that._ionTerrainAssetId)) {
+            if(!defined(that._ionTerrainAssetId)) {
                 _resetTerrainProvider();
                 return;
             }
@@ -794,9 +795,10 @@ define([
             }
             that._scene.requestRender();
         });
-        function _getColor(level) {
-            var MAX_ZOOM_LEVEL = 24.0;
-            var normLevel = level / MAX_ZOOM_LEVEL;
+
+        function _getColor(rectangle) {
+            var tilingAvailability = that._scene.terrainProvider.availability;
+            var maximumLevel = tilingAvailability.computeBestAvailableLevelOverRectangle(rectangle);
             if(!defined(that._LODColorRamp)) {
                 // Sample from a small image to figure out color of tile
                 var ramp = document.createElement('canvas');
@@ -819,14 +821,16 @@ define([
                 that._LODColorRamp = ctx;
             }
 
-            var color = that._LODColorRamp.getImageData(normLevel * 100, 0, 1, 1).data;
+            var POTENTIAL_MAXIMUM = 24.0;
+            var color = that._LODColorRamp.getImageData(100.0 * maximumLevel / POTENTIAL_MAXIMUM, 0, 1, 1).data;
             return new Color(color[0] / 255.0, color[1] / 255.0, color[2] / 255.0, 0.75);
         }
+
         function _addLODPrimitives() {
             that._htLODPrimitives.removeAll();
             that._scene.globe._surface.forEachRenderedTile(function(tile) {
                 var extent = tile._rectangle;
-                var color = _getColor(tile._level);
+                var color = _getColor(extent);
                 var prim = new GroundPrimitive({
                     geometryInstances: new GeometryInstance({
                         geometry: new RectangleGeometry({

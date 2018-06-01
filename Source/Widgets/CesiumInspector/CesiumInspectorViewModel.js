@@ -693,39 +693,40 @@ define([
             });
         }
 
-        this._zoomToIonTerrain = createCommand(function() {
-            that._terrainExtentPromise.then(function(extent) {
-                // This code is basically copied from AnalyticalGraphicsInc/agi-cesium-cloud/public/Core/flyToAsset.js#L146
-                // It would be nice if this was built into Camera, or something.
-                var camera = that._scene.camera;
-                var scene = that._scene;
-                var globe = scene.globe;
+        function _flyToTerrainRectangle(scene, rectangle, duration) {
+            // This code is based on AnalyticalGraphicsInc/agi-cesium-cloud/public/Core/flyToAsset.js#L146
+            var camera = scene.camera;
+            var globe = scene.globe;
 
-                var cartographics = [
-                    Rectangle.center(extent),
-                    Rectangle.southeast(extent),
-                    Rectangle.southwest(extent),
-                    Rectangle.northeast(extent),
-                    Rectangle.northwest(extent)
-                ];
+            var cartographics = [
+                Rectangle.center(rectangle),
+                Rectangle.southeast(rectangle),
+                Rectangle.southwest(rectangle),
+                Rectangle.northeast(rectangle),
+                Rectangle.northwest(rectangle)
+            ];
 
-                return sampleTerrainMostDetailed(globe.terrainProvider, cartographics)
-                    .then(function (positionsOnTerrain) {
-                        var maxHeight = -Number.MAX_VALUE;
-                        positionsOnTerrain.forEach(function (p) {
-                            maxHeight = Math.max(p.height, maxHeight);
-                        });
-
-                        var finalPosition = globe.ellipsoid.cartesianToCartographic(camera.getRectangleCameraCoordinates(extent));
-                        finalPosition.height += maxHeight;
-
-                        camera.flyTo({
-                            destination: globe.ellipsoid.cartographicToCartesian(finalPosition),
-                            endTransform: Matrix4.IDENTITY,
-                            duration: 1
-                        });
+            return sampleTerrainMostDetailed(globe.terrainProvider, cartographics)
+                .then(function (positionsOnTerrain) {
+                    var maxHeight = -Number.MAX_VALUE;
+                    positionsOnTerrain.forEach(function (p) {
+                        maxHeight = Math.max(p.height, maxHeight);
                     });
 
+                    var finalPosition = globe.ellipsoid.cartesianToCartographic(camera.getRectangleCameraCoordinates(rectangle));
+                    finalPosition.height += maxHeight;
+
+                    camera.flyTo({
+                        destination: globe.ellipsoid.cartographicToCartesian(finalPosition),
+                        endTransform: Matrix4.IDENTITY,
+                        duration: duration
+                    });
+                });
+        }
+
+        this._zoomToIonTerrain = createCommand(function() {
+            that._terrainExtentPromise.then(function (extent) {
+                _flyToTerrainRectangle(that._scene, extent, 1);
             });
         });
 

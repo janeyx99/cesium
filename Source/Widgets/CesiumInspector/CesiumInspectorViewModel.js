@@ -634,11 +634,11 @@ define([
 
         this._sanitizeIonAssetIdSubscription = knockout.getObservable(this, 'ionTerrainAssetStr').subscribe(function(val) {
             var id = parseInt(val, 10);
-            if(isNaN(id)) {
+            if (isNaN(id)) {
                 that.ionTerrainAssetStr = '';
                 that._ionTerrainAssetId = undefined;
                 _updateTerrainProvider();
-            } else if(id !== that._ionTerrainAssetId) {
+            } else if (id !== that._ionTerrainAssetId) {
                 that._ionTerrainAssetId = id;
                 _updateTerrainProvider();
             } else {
@@ -649,20 +649,20 @@ define([
         function _updateTerrainProvider() {
             // Reset LOD to normal setting to avoid rendering crash.
             that.suspendUpdates = false;
-
             that.highlightTerrain = false;
 
-            if(!defined(that._ionTerrainAssetId)) {
+            if (!defined(that._ionTerrainAssetId)) {
                 that._scene.terrainProvider = that._originalTerrainProvider;
                 that._originalTerrainProvider = undefined;
                 return;
             }
 
-            if(!defined(that._originalTerrainProvider)) {
+            if (!defined(that._originalTerrainProvider)) {
                 // This is the first time we're using an ion asset, so save the current
                 // terrain provider for later.
                 that._originalTerrainProvider = that._scene.terrainProvider;
             }
+
             that._scene.terrainProvider = new CesiumTerrainProvider({
                 url: IonResource.fromAssetId(that._ionTerrainAssetId)
             });
@@ -673,7 +673,7 @@ define([
             );
 
             that._terrainExtentPromise.then(function(rectangle) {
-                if(defined(that._terrainPrimitive)) {
+                if (defined(that._terrainPrimitive)) {
                     that._scene.primitives.remove(that._terrainPrimitive);
                 }
 
@@ -730,7 +730,7 @@ define([
         });
 
         this._highlightTerrainSubscription = knockout.getObservable(this, 'highlightTerrain').subscribe(function(enable) {
-            if(!that._scene.primitives.contains(that._terrainPrimitive)) {
+            if (!that._scene.primitives.contains(that._terrainPrimitive)) {
                 that._scene.primitives.add(that._terrainPrimitive);
             }
             that._terrainPrimitive.show = enable;

@@ -13,6 +13,7 @@ define([
         '../../Core/Rectangle',
         '../../Core/RectangleGeometry',
         '../../Core/Resource',
+        '../../Core/RuntimeError',
         '../../Core/sampleTerrainMostDetailed',
         '../../Core/ScreenSpaceEventHandler',
         '../../Core/ScreenSpaceEventType',
@@ -38,6 +39,7 @@ define([
         Rectangle,
         RectangleGeometry,
         Resource,
+        RuntimeError,
         sampleTerrainMostDetailed,
         ScreenSpaceEventHandler,
         ScreenSpaceEventType,
@@ -119,6 +121,7 @@ define([
         this._performanceContainer = performanceContainer;
         this._originalTerrainProvider = undefined;
         this._terrainExtentPromise = undefined;
+        this._terrainPrimitivePromise = undefined;
         this._terrainPrimitive = undefined;
 
         var globe = this._scene.globe;
@@ -646,33 +649,55 @@ define([
             }
         });
 
+        function _resetTerrainProvider() {
+            if(defined(that._originalTerrainProvider)) {
+                that._scene.terrainProvider = that._originalTerrainProvider;
+                that._originalTerrainProvider = undefined;
+            }
+        }
+
         function _updateTerrainProvider() {
             // Reset LOD to normal setting to avoid rendering crash.
             that.suspendUpdates = false;
             that.highlightTerrain = false;
 
             if (!defined(that._ionTerrainAssetId)) {
-                that._scene.terrainProvider = that._originalTerrainProvider;
-                that._originalTerrainProvider = undefined;
+                _resetTerrainProvider();
                 return;
             }
 
-            if (!defined(that._originalTerrainProvider)) {
-                // This is the first time we're using an ion asset, so save the current
-                // terrain provider for later.
-                that._originalTerrainProvider = that._scene.terrainProvider;
-            }
-
-            that._scene.terrainProvider = new CesiumTerrainProvider({
-                url: IonResource.fromAssetId(that._ionTerrainAssetId)
+            that._terrainMetadataPromise = Resource.fetchJson(
+                Ion.defaultServer.url + 'assets/' + that._ionTerrainAssetId + '?access_token=' + Ion.defaultAccessToken
+            )
+            .then(function (metadata) {
+                if (metadata.type !== 'TERRAIN') {
+                    throw new RuntimeError('Asset ' + metadata.id + ' is not terrain');
+                }
+                return metadata;
+            }).otherwise(function (err) {
+                _resetTerrainProvider();
+                throw err;
             });
 
-            that._terrainExtentPromise = Resource.fetchJson(
-                // We need the extents for camera zoom and highlighting terrain area.
-                Ion.defaultServer.url + 'assets/' + that._ionTerrainAssetId + '/extent?access_token=' + Ion.defaultAccessToken
-            );
+            that._terrainMetadataPromise.then(function (metadata) {
+                if (!defined(that._originalTerrainProvider)) {
+                    // This is the first time we're using an ion asset, save the current terrain provider for later.
+                    that._originalTerrainProvider = that._scene.terrainProvider;
+                }
 
-            that._terrainExtentPromise.then(function(rectangle) {
+                that._scene.terrainProvider = new CesiumTerrainProvider({
+                    url: IonResource.fromAssetId(metadata.id)
+                });
+            });
+
+            that._terrainExtentPromise = that._terrainMetadataPromise.then(function (metadata) {
+                return Resource.fetchJson(
+                    // We need the extents for camera zoom and highlighting terrain area.
+                    Ion.defaultServer.url + 'assets/' + metadata.id + '/extent?access_token=' + Ion.defaultAccessToken
+                );
+            });
+
+            that._terrainPrimitivePromise = that._terrainExtentPromise.then(function(rectangle) {
                 if (defined(that._terrainPrimitive)) {
                     that._scene.primitives.remove(that._terrainPrimitive);
                 }
@@ -690,6 +715,7 @@ define([
                 });
 
                 that._terrainPrimitive.show = false;
+                return that._terrainPrimitive;
             });
         }
 
@@ -731,11 +757,13 @@ define([
         });
 
         this._highlightTerrainSubscription = knockout.getObservable(this, 'highlightTerrain').subscribe(function(enable) {
-            if (!that._scene.primitives.contains(that._terrainPrimitive)) {
-                that._scene.primitives.add(that._terrainPrimitive);
-            }
-            that._terrainPrimitive.show = enable;
-            that._scene.requestRender();
+            that._terrainPrimitivePromise.then(function (primitive) {
+                if (!that._scene.primitives.contains(primitive)) {
+                    that._scene.primitives.add(primitive);
+                }
+                primitive.show = enable;
+                that._scene.requestRender();
+            });
         });
     }
 

@@ -337,7 +337,7 @@ define([
         assetIdText.className = 'cesium-cesiumInspector-assetIdText';
         assetIdText.setAttribute('data-bind', 'textInput: ionTerrainAssetStr');
 
-        // Button to fly the camra to terrain asset
+        // Button to fly the camera to terrain asset
         var zoomToTd = document.createElement('td');
         itTr.appendChild(zoomToTd);
         var zoomToBtn = document.createElement('input');
@@ -356,6 +356,47 @@ define([
         highlightTerrainBtn.type = 'checkbox';
         highlightTerrainBtn.className = 'cesium-cesiumInspector-pickButton';
         highlightTerrainBtn.setAttribute('data-bind', 'checked: highlightTerrain, enable: ionTerrainAssetStr');
+
+        // Text field for camera position longitude
+        var cameraLongitudeTr = document.createElement('tr');
+        ionTerrainInputTable.appendChild(cameraLongitudeTr);
+        var cameraLongitudeText = document.createElement('input');
+        cameraLongitudeTr.appendChild(cameraLongitudeText);
+        cameraLongitudeText.type = 'text';
+        cameraLongitudeText.placeholder = 'Longitude';
+        cameraLongitudeText.className = 'cesium-cesiumInspector-positionLonText';
+        cameraLongitudeText.setAttribute('data-bind', 'textInput: positionLonText');
+
+        // Text field for camera position latitude
+        var cameraLatitudeTr = document.createElement('tr');
+        ionTerrainInputTable.appendChild(cameraLatitudeTr);
+        var cameraLatitudeText = document.createElement('input');
+        cameraLatitudeTr.appendChild(cameraLatitudeText);
+        cameraLatitudeText.type = 'text';
+        cameraLatitudeText.placeholder = 'Latitude';
+        cameraLatitudeText.className = 'cesium-cesiumInspector-positionLatText';
+        cameraLatitudeText.setAttribute('data-bind', 'textInput: positionLatText');
+
+        // Text field for camera position height
+        var cameraHeightTr = document.createElement('tr');
+        ionTerrainInputTable.appendChild(cameraHeightTr);
+        var cameraHeightText = document.createElement('input');
+        cameraHeightTr.appendChild(cameraHeightText);
+        cameraHeightText.type = 'text';
+        cameraHeightText.placeholder = 'Height';
+        cameraHeightText.className = 'cesium-cesiumInspector-positionHeightText';
+        cameraHeightText.setAttribute('data-bind', 'textInput: positionHeightText');
+
+        // Button to fly the camera to a certain position
+        var cameraZoomToTr = document.createElement('tr');
+        ionTerrainInputTable.appendChild(cameraZoomToTr);
+        var cameraZoomToBtn = document.createElement('input');
+        cameraZoomToTr.appendChild(cameraZoomToBtn);
+        cameraZoomToBtn.type = 'button';
+        cameraZoomToBtn.value = 'Zoom To';
+        cameraZoomToBtn.className = 'cesium-cesiumInspector-pickButton';
+        cameraZoomToBtn.setAttribute('data-bind',
+            'click: zoomToPosition, enable: positionHeightText && positionLatText && positionLonText');
 
         var wireframe = document.createElement('div');
         terrainSection.appendChild(wireframe);

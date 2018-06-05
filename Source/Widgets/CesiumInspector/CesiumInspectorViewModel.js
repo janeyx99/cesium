@@ -1,5 +1,6 @@
 define([
         '../../Core/Cartesian3',
+        '../../Core/Cartographic',
         '../../Core/CesiumTerrainProvider',
         '../../Core/Color',
         '../../Core/ColorGeometryInstanceAttribute',
@@ -28,6 +29,7 @@ define([
         '../createCommand'
     ], function(
         Cartesian3,
+        Cartographic,
         CesiumTerrainProvider,
         Color,
         ColorGeometryInstanceAttribute,
@@ -306,6 +308,30 @@ define([
         this.pickTileActive = false;
 
         /**
+         * Gets or sets ion camera position latitude.  This property is observable.
+         * @type {String}
+         * @default ""
+         */
+        this.positionLatText = '';
+        this._positionLat = undefined;
+
+        /**
+         * Gets or sets ion camera position longitude.  This property is observable.
+         * @type {String}
+         * @default ""
+         */
+        this.positionLonText = '';
+        this._positionLon = undefined;
+
+        /**
+         * Gets or sets ion camera position height.  This property is observable.
+         * @type {String}
+         * @default ""
+         */
+        this.positionHeightText = '';
+        this._positionHeight = undefined;
+
+        /**
          * Gets or sets if the cesium inspector drop down is visible.  This property is observable.
          * @type {Boolean}
          * @default true
@@ -392,6 +418,9 @@ define([
             'hasPickedTile',
             'pickPrimitiveActive',
             'pickTileActive',
+            'positionLatText',
+            'positionLonText',
+            'positionHeightText',
             'dropDownVisible',
             'generalVisible',
             'primitivesVisible',
@@ -665,6 +694,51 @@ define([
             }
         });
 
+        this._sanitizePositionLatitudeSubscription = knockout.getObservable(this, 'positionLatText').subscribe(function(val) {
+            var lat = parseFloat(val, 10);
+            that._positionLat = lat;
+            // if (isNaN(lat)) {
+            //     that.positionLatText = '';
+            //     that._positionLat = undefined;
+            //     //_updateTerrainProvider(); TODO: updateCamera
+            // } else if (lat !== that._positionLat) {
+            //     that._positionLat = lat;
+            //     //_updateTerrainProvider(); TODO: updateCamera
+            // } else {
+            //     that.positionLatText = lat.toString();
+            // }
+        });
+
+        this._sanitizePositionLongitudeSubscription = knockout.getObservable(this, 'positionLonText').subscribe(function(val) {
+            var lon = parseFloat(val, 10);
+            that._positionLon = lon;
+            // if (isNaN(lon)) {
+            //     that.positionLonText = '';
+            //     that._positionLon = undefined;
+            //     //_updateTerrainProvider(); TODO: updateCamera
+            // } else if (lon !== that._positionLon) {
+            //     that._positionLon = lon;
+            //     //_updateTerrainProvider(); TODO: updateCamera
+            // } else {
+            //     that.positionLonText = lon.toString();
+            // }
+        });
+
+        this._sanitizePositionHeightSubscription = knockout.getObservable(this, 'positionHeightText').subscribe(function(val) {
+            var height = parseFloat(val, 10);
+            that._positionHeight = height;
+            // if (isNaN(height)) {
+            //     that.positionHeightText = '';
+            //     that._positionHeight = undefined;
+            //     //_updateTerrainProvider(); TODO: updateCamera
+            // } else if (height !== that._positionHeight) {
+            //     that._positionHeight = height;
+            //     //_updateTerrainProvider(); TODO: updateCamera
+            // } else {
+            //     that.positionHeightText = height.toString();
+            // }
+        });
+
         function _resetTerrainProvider() {
             if(defined(that._originalTerrainProvider)) {
                 that._scene.terrainProvider = that._originalTerrainProvider;
@@ -772,6 +846,15 @@ define([
                 _flyToTerrainRectangle(that._scene, extent, 1);
             });
         });
+
+        this._zoomToPosition = createCommand(function() {
+            var cartographic = new Cartographic(that._positionLon, that._positionLat, that._positionHeight);
+            scene.camera.flyTo({
+                destination: Cartographic.toCartesian(cartographic),
+                endTransform: Matrix4.IDENTITY,
+                duration: 1
+            });
+        })
 
         this._highlightTerrainSubscription = knockout.getObservable(this, 'highlightTerrain').subscribe(function(enable) {
             that._terrainPrimitivePromise.then(function (primitive) {
@@ -1194,6 +1277,18 @@ define([
             get : function() {
                 return this._zoomToIonTerrain;
             }
+        },
+
+        /**
+         * Gets the command to fly the camera to a desired position
+         * @memberof CesiumInspectorViewModel.prototype
+         *
+         * @type {Command}
+         */
+        zoomToPosition : {
+            get : function() {
+                return this._zoomToPosition;
+            }
         }
     });
 
@@ -1255,6 +1350,9 @@ define([
         this._pickPrimitiveActiveSubscription.dispose();
         this._pickTileActiveSubscription.dispose();
         this._sanitizeIonAssetIdSubscription.dispose();
+        this._sanitizePositionLatitudeSubscription.dispose();
+        this._sanitizePositionLongitudeSubscription.dispose();
+        this._sanitizePositionHeightSubscription.dispose();
         this._highlightTerrainSubscription.dispose();
         this._highlightLODSubscription.dispose();
         return destroyObject(this);

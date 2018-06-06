@@ -86,6 +86,10 @@
     box-shadow: 0 0 8px #fff;
 }
 
+.cesium-cesiumInspector-positionText {
+    text-align: left;
+}
+
 .cesium-cesiumInspector-center {
     text-align: center;
 }
@@ -122,4 +126,8 @@
 
 .cesium-cesiumInspector-assetIdText {
     width: 45px;
+}
+
+.cesium-cesiumInspector-ionPositionTable {
+    margin: auto;
 }

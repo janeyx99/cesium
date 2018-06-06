@@ -360,6 +360,13 @@ define([
         this.terrainVisible = false;
 
         /**
+         * Gets or sets if the position section is visible.  This property is observable.
+         * @type {Boolean}
+         * @default false
+         */
+        this.positionVisible = false;
+
+        /**
          * Gets or sets the index of the depth frustum text.  This property is observable.
          * @type {String}
          * @default ''
@@ -391,6 +398,15 @@ define([
          */
         this.terrainSwitchText = knockout.pureComputed(function() {
             return that.terrainVisible ? '-' : '+';
+        });
+
+        /**
+         * Gets the text on the terrain section expand button.  This property is computed.
+         * @type {String}
+         * @default '+'
+         */
+        this.positionSwitchText = knockout.pureComputed(function() {
+            return that.positionVisible ? '-' : '+';
         });
 
         knockout.track(this, [
@@ -425,6 +441,7 @@ define([
             'generalVisible',
             'primitivesVisible',
             'terrainVisible',
+            'positionVisible',
             'depthFrustumText'
         ]);
 
@@ -443,6 +460,12 @@ define([
         this._toggleTerrain = createCommand(function() {
             that.terrainVisible = !that.terrainVisible;
         });
+
+        this._togglePosition = createCommand(function() {
+            that.positionVisible = !that.positionVisible;
+            that.scene.camera.moveEnd.addEventListener(_updatePosition);
+            _updatePosition();
+        })
 
         this._frustumsSubscription = knockout.getObservable(this, 'frustums').subscribe(function(val) {
             that._scene.debugShowFrustums = val;
@@ -696,47 +719,35 @@ define([
 
         this._sanitizePositionLatitudeSubscription = knockout.getObservable(this, 'positionLatText').subscribe(function(val) {
             var lat = parseFloat(val, 10);
+            if (isNaN(lat) && val !== '-') {
+                that.positionLatText = '';
+                return;
+            } else if (lat === that._positionLat) {
+                that.positionLatText = lat.toString();
+            }
             that._positionLat = lat;
-            // if (isNaN(lat)) {
-            //     that.positionLatText = '';
-            //     that._positionLat = undefined;
-            //     //_updateTerrainProvider(); TODO: updateCamera
-            // } else if (lat !== that._positionLat) {
-            //     that._positionLat = lat;
-            //     //_updateTerrainProvider(); TODO: updateCamera
-            // } else {
-            //     that.positionLatText = lat.toString();
-            // }
         });
 
         this._sanitizePositionLongitudeSubscription = knockout.getObservable(this, 'positionLonText').subscribe(function(val) {
             var lon = parseFloat(val, 10);
+            if (isNaN(lon) && val !== '-') {
+                that.positionLonText = '';
+                return;
+            } else if (lon === that._positionLon) {
+                that.positionLonText = lon.toString();
+            }
             that._positionLon = lon;
-            // if (isNaN(lon)) {
-            //     that.positionLonText = '';
-            //     that._positionLon = undefined;
-            //     //_updateTerrainProvider(); TODO: updateCamera
-            // } else if (lon !== that._positionLon) {
-            //     that._positionLon = lon;
-            //     //_updateTerrainProvider(); TODO: updateCamera
-            // } else {
-            //     that.positionLonText = lon.toString();
-            // }
         });
 
         this._sanitizePositionHeightSubscription = knockout.getObservable(this, 'positionHeightText').subscribe(function(val) {
             var height = parseFloat(val, 10);
+            if (isNaN(height) && val !== '-') {
+                that.positionHeightText = '';
+                return;
+            } else if (height === that._positionHeight) {
+                that.positionHeightText = height.toString();
+            }
             that._positionHeight = height;
-            // if (isNaN(height)) {
-            //     that.positionHeightText = '';
-            //     that._positionHeight = undefined;
-            //     //_updateTerrainProvider(); TODO: updateCamera
-            // } else if (height !== that._positionHeight) {
-            //     that._positionHeight = height;
-            //     //_updateTerrainProvider(); TODO: updateCamera
-            // } else {
-            //     that.positionHeightText = height.toString();
-            // }
         });
 
         function _resetTerrainProvider() {
@@ -824,9 +835,9 @@ define([
             ];
 
             return sampleTerrainMostDetailed(globe.terrainProvider, cartographics)
-                .then(function (positionsOnTerrain) {
+                .then(function(positionsOnTerrain) {
                     var maxHeight = -Number.MAX_VALUE;
-                    positionsOnTerrain.forEach(function (p) {
+                    positionsOnTerrain.forEach(function(p) {
                         maxHeight = Math.max(p.height, maxHeight);
                     });
 
@@ -842,13 +853,16 @@ define([
         }
 
         this._zoomToIonTerrain = createCommand(function() {
-            that._terrainExtentPromise.then(function (extent) {
+            that._terrainExtentPromise.then(function(extent) {
                 _flyToTerrainRectangle(that._scene, extent, 1);
             });
         });
 
         this._zoomToPosition = createCommand(function() {
-            var cartographic = new Cartographic(that._positionLon, that._positionLat, that._positionHeight);
+            var latitudeInRadians = that._positionLat * Math.PI / 180;
+            var longitudeInRadians = that._positionLon * Math.PI / 180;
+
+            var cartographic = new Cartographic(longitudeInRadians, latitudeInRadians, that._positionHeight);
             scene.camera.flyTo({
                 destination: Cartographic.toCartesian(cartographic),
                 endTransform: Matrix4.IDENTITY,
@@ -856,8 +870,20 @@ define([
             });
         })
 
+        this._goToGoogleEarth = createCommand(function() {
+            window.open('https://earth.google.com/web/@' + that._positionLat + ',' +
+                              that._positionLon + ',0a,' + that._positionHeight + 'd,35y', '_blank');
+        });
+
+        function _updatePosition() {
+            var cameraCartographic = that.scene.camera.positionCartographic;
+            that.positionHeightText = cameraCartographic.height;
+            that.positionLatText = cameraCartographic.latitude * 180 / Math.PI;
+            that.positionLonText = cameraCartographic.longitude * 180 / Math.PI;
+        }
+
         this._highlightTerrainSubscription = knockout.getObservable(this, 'highlightTerrain').subscribe(function(enable) {
-            that._terrainPrimitivePromise.then(function (primitive) {
+            that._terrainPrimitivePromise.then(function(primitive) {
                 if (!that._scene.primitives.contains(primitive)) {
                     that._scene.primitives.add(primitive);
                 }
@@ -1100,6 +1126,18 @@ define([
         },
 
         /**
+         * Gets the command to expand and collapse the position section
+         * @memberof CesiumInspectorViewModel.prototype
+         *
+         * @type {Command}
+         */
+        togglePosition : {
+            get : function() {
+                return this._togglePosition;
+            }
+        },
+
+        /**
          * Gets the command to pick a primitive
          * @memberof CesiumInspectorViewModel.prototype
          *
@@ -1288,6 +1326,18 @@ define([
         zoomToPosition : {
             get : function() {
                 return this._zoomToPosition;
+            }
+        },
+
+         /**
+         * Gets the command to load the position's latitude, longitude and height on Google Earth
+         * @memberof CesiumInspectorViewModel.prototype
+         *
+         * @type {Command}
+         */
+        goToGoogleEarth : {
+            get : function() {
+                return this._goToGoogleEarth;
             }
         }
     });

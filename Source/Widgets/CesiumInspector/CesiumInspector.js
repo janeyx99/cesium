@@ -38,6 +38,18 @@ define([
         }
         //>>includeEnd('debug');
 
+        /**
+         * Function to create a toggle-able plus element
+         * @param {String} clickAttr the name of the on-click listener
+         * @param {String} textAttr the name of the function that will return the associating text
+         */
+        function createPlus(clickAttr, textAttr) {
+            var plus = document.createElement('span');
+            plus.className = 'cesium-cesiumInspector-toggleSwitch';
+            plus.setAttribute('data-bind', 'click: ' + clickAttr + ', text: ' + textAttr);
+            return plus;
+        }
+
         container = getElement(container);
 
         var performanceContainer = document.createElement('div');
@@ -65,10 +77,11 @@ define([
         // General
         var general = document.createElement('div');
         general.className = 'cesium-cesiumInspector-sectionHeader';
-        var plus = document.createElement('span');
-        plus.className = 'cesium-cesiumInspector-toggleSwitch';
-        plus.setAttribute('data-bind', 'click: toggleGeneral, text: generalSwitchText');
-        general.appendChild(plus);
+
+        // var plus = document.createElement('span');
+        // plus.className = 'cesium-cesiumInspector-toggleSwitch';
+        // plus.setAttribute('data-bind', 'click: toggleGeneral, text: generalSwitchText');
+        general.appendChild(createPlus('toggleGeneral', 'generalSwitchText'));
         general.appendChild(document.createTextNode('General'));
         panel.appendChild(general);
 
@@ -161,10 +174,10 @@ define([
         // Primitives
         var prim = document.createElement('div');
         prim.className = 'cesium-cesiumInspector-sectionHeader';
-        plus = document.createElement('span');
-        plus.className = 'cesium-cesiumInspector-toggleSwitch';
-        plus.setAttribute('data-bind', 'click: togglePrimitives, text: primitivesSwitchText');
-        prim.appendChild(plus);
+        // plus = document.createElement('span');
+        // plus.className = 'cesium-cesiumInspector-toggleSwitch';
+        // plus.setAttribute('data-bind', 'click: togglePrimitives, text: primitivesSwitchText');
+        prim.appendChild(createPlus('togglePrimitives','primitivesSwitchText'));
         prim.appendChild(document.createTextNode('Primitives'));
         panel.appendChild(prim);
 
@@ -214,10 +227,10 @@ define([
         // Terrain
         var terrain = document.createElement('div');
         terrain.className = 'cesium-cesiumInspector-sectionHeader';
-        plus = document.createElement('span');
-        plus.className = 'cesium-cesiumInspector-toggleSwitch';
-        plus.setAttribute('data-bind', 'click: toggleTerrain, text: terrainSwitchText');
-        terrain.appendChild(plus);
+        // plus = document.createElement('span');
+        // plus.className = 'cesium-cesiumInspector-toggleSwitch';
+        // plus.setAttribute('data-bind', 'click: toggleTerrain, text: terrainSwitchText');
+        terrain.appendChild(createPlus('toggleTerrain', 'terrainSwitchText'));
         terrain.appendChild(document.createTextNode('Terrain'));
         panel.appendChild(terrain);
 
@@ -337,7 +350,7 @@ define([
         assetIdText.className = 'cesium-cesiumInspector-assetIdText';
         assetIdText.setAttribute('data-bind', 'textInput: ionTerrainAssetStr');
 
-        // Button to fly the camera to terrain asset
+         // Button to fly the camera to terrain asset
         var zoomToTd = document.createElement('td');
         itTr.appendChild(zoomToTd);
         var zoomToBtn = document.createElement('input');
@@ -356,47 +369,6 @@ define([
         highlightTerrainBtn.type = 'checkbox';
         highlightTerrainBtn.className = 'cesium-cesiumInspector-pickButton';
         highlightTerrainBtn.setAttribute('data-bind', 'checked: highlightTerrain, enable: ionTerrainAssetStr');
-
-        // Text field for camera position longitude
-        var cameraLongitudeTr = document.createElement('tr');
-        ionTerrainInputTable.appendChild(cameraLongitudeTr);
-        var cameraLongitudeText = document.createElement('input');
-        cameraLongitudeTr.appendChild(cameraLongitudeText);
-        cameraLongitudeText.type = 'text';
-        cameraLongitudeText.placeholder = 'Longitude';
-        cameraLongitudeText.className = 'cesium-cesiumInspector-positionLonText';
-        cameraLongitudeText.setAttribute('data-bind', 'textInput: positionLonText');
-
-        // Text field for camera position latitude
-        var cameraLatitudeTr = document.createElement('tr');
-        ionTerrainInputTable.appendChild(cameraLatitudeTr);
-        var cameraLatitudeText = document.createElement('input');
-        cameraLatitudeTr.appendChild(cameraLatitudeText);
-        cameraLatitudeText.type = 'text';
-        cameraLatitudeText.placeholder = 'Latitude';
-        cameraLatitudeText.className = 'cesium-cesiumInspector-positionLatText';
-        cameraLatitudeText.setAttribute('data-bind', 'textInput: positionLatText');
-
-        // Text field for camera position height
-        var cameraHeightTr = document.createElement('tr');
-        ionTerrainInputTable.appendChild(cameraHeightTr);
-        var cameraHeightText = document.createElement('input');
-        cameraHeightTr.appendChild(cameraHeightText);
-        cameraHeightText.type = 'text';
-        cameraHeightText.placeholder = 'Height';
-        cameraHeightText.className = 'cesium-cesiumInspector-positionHeightText';
-        cameraHeightText.setAttribute('data-bind', 'textInput: positionHeightText');
-
-        // Button to fly the camera to a certain position
-        var cameraZoomToTr = document.createElement('tr');
-        ionTerrainInputTable.appendChild(cameraZoomToTr);
-        var cameraZoomToBtn = document.createElement('input');
-        cameraZoomToTr.appendChild(cameraZoomToBtn);
-        cameraZoomToBtn.type = 'button';
-        cameraZoomToBtn.value = 'Zoom To';
-        cameraZoomToBtn.className = 'cesium-cesiumInspector-pickButton';
-        cameraZoomToBtn.setAttribute('data-bind',
-            'click: zoomToPosition, enable: positionHeightText && positionLatText && positionLonText');
 
         var wireframe = document.createElement('div');
         terrainSection.appendChild(wireframe);
@@ -429,6 +401,89 @@ define([
         coordCheck.setAttribute('data-bind', 'checked: tileCoordinates');
         tileCoords.appendChild(coordCheck);
         tileCoords.appendChild(document.createTextNode('Show tile coordinates'));
+
+        // Position
+        var position = document.createElement('div');
+        position.className = 'cesium-cesiumInspector-sectionHeader';
+        position.appendChild(createPlus('togglePosition', 'positionSwitchText'));
+        position.appendChild(document.createTextNode('Position'));
+        panel.appendChild(position);
+
+        var positionSection = document.createElement('div');
+        positionSection.className = 'cesium-cesiumInspector-subSection';
+        positionSection.setAttribute('data-bind', 'css: {"cesium-cesiumInspector-show" : positionVisible, "cesium-cesiumInspector-hide" :  !positionVisible}');
+        panel.appendChild(positionSection);
+
+        var ionPositionTable = document.createElement('table');
+        positionSection.appendChild(ionPositionTable);
+        ionPositionTable.className = 'cesium-cesiumInspector-ionPositionTable';
+
+        // Text field for camera position longitude
+        var cameraLongitudeTr = document.createElement('tr');
+        ionPositionTable.appendChild(cameraLongitudeTr);
+        var cameraLongitudeTd = document.createElement('td');
+        var cameraLongitudeText = document.createElement('input');
+        cameraLongitudeTd.appendChild(cameraLongitudeText);
+        cameraLongitudeTr.appendChild(document.createTextNode("Lon: "));
+        cameraLongitudeTr.appendChild(cameraLongitudeTd);
+        cameraLongitudeText.type = 'text';
+        cameraLongitudeText.placeholder = 'Longitude';
+        cameraLongitudeText.className = 'cesium-cesiumInspector-positionText';
+        cameraLongitudeText.setAttribute('data-bind', 'textInput: positionLonText');
+
+        // Text field for camera position latitude
+        var cameraLatitudeTr = document.createElement('tr');
+        ionPositionTable.appendChild(cameraLatitudeTr);
+        var cameraLatitudeTd = document.createElement('td');
+        var cameraLatitudeText = document.createElement('input');
+        cameraLatitudeTd.appendChild(cameraLatitudeText);
+        cameraLatitudeTr.appendChild(document.createTextNode("Lat: "));
+        cameraLatitudeTr.appendChild(cameraLatitudeTd);
+        cameraLatitudeText.type = 'text';
+        cameraLatitudeText.placeholder = 'Latitude';
+        cameraLatitudeText.className = 'cesium-cesiumInspector-positionText';
+        cameraLatitudeText.setAttribute('data-bind', 'textInput: positionLatText');
+
+        // Text field for camera position height
+        var cameraHeightTr = document.createElement('tr');
+        ionPositionTable.appendChild(cameraHeightTr);
+        var cameraHeightTd = document.createElement('td');
+        var cameraHeightText = document.createElement('input');
+        cameraHeightTd.appendChild(cameraHeightText);
+        cameraHeightTr.appendChild(document.createTextNode("H: "));
+        cameraHeightTr.appendChild(cameraHeightTd);
+        cameraHeightText.type = 'text';
+        cameraHeightText.placeholder = 'Height';
+        cameraHeightText.className = 'cesium-cesiumInspector-positionText';
+        cameraHeightText.setAttribute('data-bind', 'textInput: positionHeightText');
+
+        // Table of go-to-position button and google earth button
+        var positionButtonsTable = document.createElement('table');
+        var positionButtonsTr = document.createElement('tr');
+        positionSection.appendChild(positionButtonsTable);
+        positionButtonsTable.appendChild(positionButtonsTr);
+        var cameraGoToPosTd = document.createElement('td');
+        var goGoogleEarthTd = document.createElement('td');
+        positionButtonsTr.appendChild(cameraGoToPosTd);
+        positionButtonsTr.appendChild(goGoogleEarthTd);
+
+        // Button to fly the camera to a certain position
+        var cameraGoToPosBtn = document.createElement('input');
+        cameraGoToPosTd.appendChild(cameraGoToPosBtn);
+        cameraGoToPosBtn.type = 'button';
+        cameraGoToPosBtn.value = 'Go Here!';
+        cameraGoToPosBtn.className = 'cesium-cesiumInspector-pickButton';
+        cameraGoToPosBtn.setAttribute('data-bind',
+            'click: goToPosition, enable: positionHeightText && positionLatText && positionLonText');
+
+        // Button to open this location in Google Earth
+        var goGoogleEarthBtn = document.createElement('input');
+        goGoogleEarthTd.appendChild(goGoogleEarthBtn);
+        goGoogleEarthBtn.type = 'button';
+        goGoogleEarthBtn.value = 'Google Earth This';
+        goGoogleEarthBtn.className = 'cesium-cesiumInspector-pickButton';
+        goGoogleEarthBtn.setAttribute('data-bind',
+            'click: goToGoogleEarth, enable: positionHeightText && positionLatText && positionLonText');
 
         knockout.applyBindings(viewModel, this._element);
     }

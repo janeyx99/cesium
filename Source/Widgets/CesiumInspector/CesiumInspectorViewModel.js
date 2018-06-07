@@ -203,7 +203,7 @@ define([
         /**
          * Gets or sets ion terrain asset id state.  This property is observable.
          * @type {String}
-         * @default ""
+         * @default ''
          */
         this.ionTerrainAssetStr = '';
         this._ionTerrainAssetId = undefined;
@@ -310,7 +310,7 @@ define([
         /**
          * Gets or sets ion camera position latitude.  This property is observable.
          * @type {String}
-         * @default ""
+         * @default ''
          */
         this.positionLatText = '';
         this._positionLat = undefined;
@@ -318,7 +318,7 @@ define([
         /**
          * Gets or sets ion camera position longitude.  This property is observable.
          * @type {String}
-         * @default ""
+         * @default ''
          */
         this.positionLonText = '';
         this._positionLon = undefined;
@@ -326,7 +326,7 @@ define([
         /**
          * Gets or sets ion camera position height.  This property is observable.
          * @type {String}
-         * @default ""
+         * @default ''
          */
         this.positionHeightText = '';
         this._positionHeight = undefined;
@@ -401,7 +401,7 @@ define([
         });
 
         /**
-         * Gets the text on the terrain section expand button.  This property is computed.
+         * Gets the text on the position section expand button.  This property is computed.
          * @type {String}
          * @default '+'
          */
@@ -463,8 +463,15 @@ define([
 
         this._togglePosition = createCommand(function() {
             that.positionVisible = !that.positionVisible;
-            that.scene.camera.moveEnd.addEventListener(_updatePosition);
-            _updatePosition();
+            var camera = that.scene.camera;
+            if (that.positionVisible) {
+                camera.percentageChanged = 0;
+                camera.moveEnd.addEventListener(_updatePosition);
+                _updatePosition();
+            } else {
+                camera.percentageChanged = 0.5; // back to default
+                camera.moveEnd.removeEventListener(_updatePosition);
+            }
         })
 
         this._frustumsSubscription = knockout.getObservable(this, 'frustums').subscribe(function(val) {
@@ -858,13 +865,13 @@ define([
             });
         });
 
-        this._zoomToPosition = createCommand(function() {
-            var latitudeInRadians = that._positionLat * Math.PI / 180;
-            var longitudeInRadians = that._positionLon * Math.PI / 180;
-
-            var cartographic = new Cartographic(longitudeInRadians, latitudeInRadians, that._positionHeight);
-            scene.camera.flyTo({
-                destination: Cartographic.toCartesian(cartographic),
+        this._goToPosition = createCommand(function() {
+            var camera = scene.camera;
+            camera.flyTo({
+                destination: Cartesian3.fromDegrees(that._positionLon, that._positionLat, that._positionHeight),
+                orientation: {  direction: camera.direction,
+                                up: camera.up,
+                             },
                 endTransform: Matrix4.IDENTITY,
                 duration: 1
             });
@@ -1323,9 +1330,9 @@ define([
          *
          * @type {Command}
          */
-        zoomToPosition : {
+        goToPosition : {
             get : function() {
-                return this._zoomToPosition;
+                return this._goToPosition;
             }
         },
 

@@ -865,7 +865,8 @@ define([
             });
         });
 
-        this._goToPosition = createCommand(function() {
+        // Currently NOT in use! TBH I like this better though
+        this._goToPositionInCurrentTab = createCommand(function() {
             var camera = scene.camera;
             camera.flyTo({
                 destination: Cartesian3.fromDegrees(that._positionLon, that._positionLat, that._positionHeight),
@@ -876,6 +877,18 @@ define([
                 duration: 1
             });
         })
+
+        // opens a new tab and tries to go to the same camera scene
+        this._goToPosition = createCommand(function() {
+            var camera = that.scene.camera;
+            var inspectorURL = 'http://localhost:8080/Apps/CesiumViewer/index.html?inspector=true';
+            var view = 'view=' + that._positionLon + '%2C' + that._positionLat + '%2C' + that._positionHeight;
+            var heading = camera.heading * 180 / Math.PI;
+            var pitch = camera.pitch * 180 / Math.PI;
+            var roll = camera.roll * 180 / Math.PI;
+
+            window.open(inspectorURL + '&' + view + '%2C' + heading + '%2C' + pitch + '%2C' + roll, '_blank');
+        });
 
         this._goToGoogleEarth = createCommand(function() {
             window.open('https://earth.google.com/web/@' + that._positionLat + ',' +

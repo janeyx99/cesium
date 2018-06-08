@@ -429,7 +429,8 @@ define([
         cameraLongitudeText.type = 'text';
         cameraLongitudeText.placeholder = 'Longitude';
         cameraLongitudeText.className = 'cesium-cesiumInspector-positionText';
-        cameraLongitudeText.setAttribute('data-bind', 'textInput: positionLonText');
+        cameraLongitudeText.setAttribute('data-bind',
+            'textInput: longitudeText, style: {color: isNaN(longitudeText) ? \'red\' : \'black\'}');
 
         // Text field for camera position latitude
         var cameraLatitudeTr = document.createElement('tr');
@@ -442,7 +443,8 @@ define([
         cameraLatitudeText.type = 'text';
         cameraLatitudeText.placeholder = 'Latitude';
         cameraLatitudeText.className = 'cesium-cesiumInspector-positionText';
-        cameraLatitudeText.setAttribute('data-bind', 'textInput: positionLatText');
+        cameraLatitudeText.setAttribute('data-bind',
+            'textInput: latitudeText, style: {color: isNaN(latitudeText) ? \'red\' : \'black\'}');
 
         // Text field for camera position height
         var cameraHeightTr = document.createElement('tr');
@@ -450,12 +452,55 @@ define([
         var cameraHeightTd = document.createElement('td');
         var cameraHeightText = document.createElement('input');
         cameraHeightTd.appendChild(cameraHeightText);
-        cameraHeightTr.appendChild(document.createTextNode("H: "));
+        cameraHeightTr.appendChild(document.createTextNode("Hgt: "));
         cameraHeightTr.appendChild(cameraHeightTd);
         cameraHeightText.type = 'text';
         cameraHeightText.placeholder = 'Height';
         cameraHeightText.className = 'cesium-cesiumInspector-positionText';
-        cameraHeightText.setAttribute('data-bind', 'textInput: positionHeightText');
+        cameraHeightText.setAttribute('data-bind',
+            'textInput: heightText, style: {color: isNaN(heightText) ? \'red\' : \'black\'}');
+
+         // Text field for camera heading
+         var cameraHeadingTr = document.createElement('tr');
+         ionPositionTable.appendChild(cameraHeadingTr);
+         var cameraHeadingTd = document.createElement('td');
+         var cameraHeadingText = document.createElement('input');
+         cameraHeadingTd.appendChild(cameraHeadingText);
+         cameraHeadingTr.appendChild(document.createTextNode("H: "));
+         cameraHeadingTr.appendChild(cameraHeadingTd);
+         cameraHeadingText.type = 'text';
+         cameraHeadingText.placeholder = 'Heading';
+         cameraHeadingText.className = 'cesium-cesiumInspector-positionText';
+         cameraHeadingText.setAttribute('data-bind',
+             'textInput: headingText, style: {color: isNaN(headingText) ? \'red\' : \'black\'}');
+
+         // Text field for camera pitch
+         var cameraPitchTr = document.createElement('tr');
+         ionPositionTable.appendChild(cameraPitchTr);
+         var cameraPitchTd = document.createElement('td');
+         var cameraPitchText = document.createElement('input');
+         cameraPitchTd.appendChild(cameraPitchText);
+         cameraPitchTr.appendChild(document.createTextNode("P: "));
+         cameraPitchTr.appendChild(cameraPitchTd);
+         cameraPitchText.type = 'text';
+         cameraPitchText.placeholder = 'Pitch';
+         cameraPitchText.className = 'cesium-cesiumInspector-positionText';
+         cameraPitchText.setAttribute('data-bind',
+             'textInput: pitchText, style: {color: isNaN(pitchText) ? \'red\' : \'black\'}');
+
+         // Text field for camera roll
+         var cameraRollTr = document.createElement('tr');
+         ionPositionTable.appendChild(cameraRollTr);
+         var cameraRollTd = document.createElement('td');
+         var cameraRollText = document.createElement('input');
+         cameraRollTd.appendChild(cameraRollText);
+         cameraRollTr.appendChild(document.createTextNode("R: "));
+         cameraRollTr.appendChild(cameraRollTd);
+         cameraRollText.type = 'text';
+         cameraRollText.placeholder = 'Roll';
+         cameraRollText.className = 'cesium-cesiumInspector-positionText';
+         cameraRollText.setAttribute('data-bind',
+             'textInput: rollText, style: {color: isNaN(rollText) ? \'red\' : \'black\'}');
 
         // Table of go-to-position button and google earth button
         var positionButtonsTable = document.createElement('table');
@@ -474,7 +519,9 @@ define([
         cameraGoToPosBtn.value = 'Go Here!';
         cameraGoToPosBtn.className = 'cesium-cesiumInspector-pickButton';
         cameraGoToPosBtn.setAttribute('data-bind',
-            'click: goToPosition, enable: positionHeightText && positionLatText && positionLonText');
+            'click: goToPosition, enable: !isNaN(heightText) && ' +
+            '!isNaN(latitudeText) && !isNaN(longitudeText) && ' +
+            '!isNaN(headingText) && !isNaN(pitchText) && !isNaN(rollText)');
 
         // Button to open this location in Google Earth
         var goGoogleEarthBtn = document.createElement('input');
@@ -483,7 +530,9 @@ define([
         goGoogleEarthBtn.value = 'Google Earth This';
         goGoogleEarthBtn.className = 'cesium-cesiumInspector-pickButton';
         goGoogleEarthBtn.setAttribute('data-bind',
-            'click: goToGoogleEarth, enable: positionHeightText && positionLatText && positionLonText');
+            'click: goToGoogleEarth, enable: !isNaN(heightText) && ' +
+            '!isNaN(latitudeText) && !isNaN(longitudeText) && ' +
+            '!isNaN(headingText) && !isNaN(pitchText) && !isNaN(rollText)');
 
         knockout.applyBindings(viewModel, this._element);
     }

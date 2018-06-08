@@ -312,24 +312,42 @@ define([
          * @type {String}
          * @default ''
          */
-        this.positionLatText = '';
-        this._positionLat = undefined;
+        this.latitudeText = '';
 
         /**
          * Gets or sets ion camera position longitude.  This property is observable.
          * @type {String}
          * @default ''
          */
-        this.positionLonText = '';
-        this._positionLon = undefined;
+        this.longitudeText = '';
 
         /**
          * Gets or sets ion camera position height.  This property is observable.
          * @type {String}
          * @default ''
          */
-        this.positionHeightText = '';
-        this._positionHeight = undefined;
+        this.positihext = '';
+
+        /**
+         * Gets or sets ion camera heading.  This property is observable.
+         * @type {String}
+         * @default ''
+         */
+        this.headingText = '';
+
+        /**
+         * Gets or sets ion camera pitch.  This property is observable.
+         * @type {String}
+         * @default ''
+         */
+        this.pitchText = '';
+
+        /**
+         * Gets or sets ion camera position roll.  This property is observable.
+         * @type {String}
+         * @default ''
+         */
+        this.rollText = '';
 
         /**
          * Gets or sets if the cesium inspector drop down is visible.  This property is observable.
@@ -434,9 +452,12 @@ define([
             'hasPickedTile',
             'pickPrimitiveActive',
             'pickTileActive',
-            'positionLatText',
-            'positionLonText',
-            'positionHeightText',
+            'latitudeText',
+            'longitudeText',
+            'positihext',
+            'headingText',
+            'pitchText',
+            'rollText',
             'dropDownVisible',
             'generalVisible',
             'primitivesVisible',
@@ -465,12 +486,12 @@ define([
             that.positionVisible = !that.positionVisible;
             var camera = that.scene.camera;
             if (that.positionVisible) {
-                camera.percentageChanged = 0;
-                camera.moveEnd.addEventListener(_updatePosition);
-                _updatePosition();
+                camera.percentageChanged = 0.1;
+                camera.moveEnd.addEventListener(_updatePositionText);
+                _updatePositionText();
             } else {
                 camera.percentageChanged = 0.5; // back to default
-                camera.moveEnd.removeEventListener(_updatePosition);
+                camera.moveEnd.removeEventListener(_updatePositionText);
             }
         })
 
@@ -724,39 +745,6 @@ define([
             }
         });
 
-        this._sanitizePositionLatitudeSubscription = knockout.getObservable(this, 'positionLatText').subscribe(function(val) {
-            var lat = parseFloat(val, 10);
-            if (isNaN(lat) && val !== '-') {
-                that.positionLatText = '';
-                return;
-            } else if (lat === that._positionLat) {
-                that.positionLatText = lat.toString();
-            }
-            that._positionLat = lat;
-        });
-
-        this._sanitizePositionLongitudeSubscription = knockout.getObservable(this, 'positionLonText').subscribe(function(val) {
-            var lon = parseFloat(val, 10);
-            if (isNaN(lon) && val !== '-') {
-                that.positionLonText = '';
-                return;
-            } else if (lon === that._positionLon) {
-                that.positionLonText = lon.toString();
-            }
-            that._positionLon = lon;
-        });
-
-        this._sanitizePositionHeightSubscription = knockout.getObservable(this, 'positionHeightText').subscribe(function(val) {
-            var height = parseFloat(val, 10);
-            if (isNaN(height) && val !== '-') {
-                that.positionHeightText = '';
-                return;
-            } else if (height === that._positionHeight) {
-                that.positionHeightText = height.toString();
-            }
-            that._positionHeight = height;
-        });
-
         function _resetTerrainProvider() {
             if(defined(that._originalTerrainProvider)) {
                 that._scene.terrainProvider = that._originalTerrainProvider;
@@ -865,41 +853,49 @@ define([
             });
         });
 
-        // Currently NOT in use! TBH I like this better though
-        this._goToPositionInCurrentTab = createCommand(function() {
-            var camera = scene.camera;
-            camera.flyTo({
-                destination: Cartesian3.fromDegrees(that._positionLon, that._positionLat, that._positionHeight),
-                orientation: {  direction: camera.direction,
-                                up: camera.up,
+        // Returns a camera position object derived from the text inputs
+        function _getCameraPositionObject () {
+            return {'latitude'  : parseFloat(that.latitudeText),
+                    'longitude' : parseFloat(that.longitudeText),
+                    'height'    : parseFloat(that.heightText),
+                    'heading'   : parseFloat(that.headingText),
+                    'pitch'     : parseFloat(that.pitchText),
+                    'roll'      : parseFloat(that.rollText)};
+        }
+
+        // Goes to a specified camera view in the same tab
+        this._goToPosition = createCommand(function() {
+            var position = _getCameraPositionObject();
+            that.scene.camera.flyTo({
+                destination: Cartesian3.fromDegrees(position.longitude, position.latitude, position.height),
+                orientation: {  heading : position.heading * Math.PI / 180,
+                                pitch   : position.pitch * Math.PI / 180,
+                                roll    : position.roll * Math.PI / 180
                              },
                 endTransform: Matrix4.IDENTITY,
                 duration: 1
             });
         })
 
-        // opens a new tab and tries to go to the same camera scene
-        this._goToPosition = createCommand(function() {
-            var camera = that.scene.camera;
-            var inspectorURL = 'http://localhost:8080/Apps/CesiumViewer/index.html?inspector=true';
-            var view = 'view=' + that._positionLon + '%2C' + that._positionLat + '%2C' + that._positionHeight;
-            var heading = camera.heading * 180 / Math.PI;
-            var pitch = camera.pitch * 180 / Math.PI;
-            var roll = camera.roll * 180 / Math.PI;
-
-            window.open(inspectorURL + '&' + view + '%2C' + heading + '%2C' + pitch + '%2C' + roll, '_blank');
-        });
-
+        // Opens the same position (but not hpr) in Google Earth
         this._goToGoogleEarth = createCommand(function() {
-            window.open('https://earth.google.com/web/@' + that._positionLat + ',' +
-                              that._positionLon + ',0a,' + that._positionHeight + 'd,35y', '_blank');
+            var position = _getCameraPositionObject();
+            var googleEarthURL = 'https://earth.google.com/web/'
+
+            window.open(googleEarthURL + '@' + position.latitude + ',' + position.longitude +
+                        ',0a,' + position.height + 'd,35y', '_blank');
         });
 
-        function _updatePosition() {
-            var cameraCartographic = that.scene.camera.positionCartographic;
-            that.positionHeightText = cameraCartographic.height;
-            that.positionLatText = cameraCartographic.latitude * 180 / Math.PI;
-            that.positionLonText = cameraCartographic.longitude * 180 / Math.PI;
+        // Updates the position textfields with each camera movement.
+        function _updatePositionText() {
+            var camera = that.scene.camera;
+            var cameraCartographic = camera.positionCartographic;
+            that.longitudeText = cameraCartographic.longitude * 180 / Math.PI;
+            that.latitudeText = cameraCartographic.latitude * 180 / Math.PI;
+            that.positihext = cameraCartographic.height;
+            that.headingText = camera.heading * 180 / Math.PI;
+            that.pitchText = camera.pitch * 180 / Math.PI;
+            that.rollText = camera.roll * 180 / Math.PI;
         }
 
         this._highlightTerrainSubscription = knockout.getObservable(this, 'highlightTerrain').subscribe(function(enable) {
@@ -1420,9 +1416,6 @@ define([
         this._pickPrimitiveActiveSubscription.dispose();
         this._pickTileActiveSubscription.dispose();
         this._sanitizeIonAssetIdSubscription.dispose();
-        this._sanitizePositionLatitudeSubscription.dispose();
-        this._sanitizePositionLongitudeSubscription.dispose();
-        this._sanitizePositionHeightSubscription.dispose();
         this._highlightTerrainSubscription.dispose();
         this._highlightLODSubscription.dispose();
         return destroyObject(this);

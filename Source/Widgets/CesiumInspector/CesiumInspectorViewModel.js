@@ -326,7 +326,7 @@ define([
          * @type {String}
          * @default ''
          */
-        this.positihext = '';
+        this.heightText = '';
 
         /**
          * Gets or sets ion camera heading.  This property is observable.
@@ -454,7 +454,7 @@ define([
             'pickTileActive',
             'latitudeText',
             'longitudeText',
-            'positihext',
+            'heightText',
             'headingText',
             'pitchText',
             'rollText',
@@ -877,7 +877,7 @@ define([
             });
         })
 
-        // Opens the same position (but not hpr) in Google Earth
+        // Opens the same position (but not the same hpr) in Google Earth
         this._goToGoogleEarth = createCommand(function() {
             var position = _getCameraPositionObject();
             var googleEarthURL = 'https://earth.google.com/web/'
@@ -892,7 +892,7 @@ define([
             var cameraCartographic = camera.positionCartographic;
             that.longitudeText = cameraCartographic.longitude * 180 / Math.PI;
             that.latitudeText = cameraCartographic.latitude * 180 / Math.PI;
-            that.positihext = cameraCartographic.height;
+            that.heightText = cameraCartographic.height;
             that.headingText = camera.heading * 180 / Math.PI;
             that.pitchText = camera.pitch * 180 / Math.PI;
             that.rollText = camera.roll * 180 / Math.PI;

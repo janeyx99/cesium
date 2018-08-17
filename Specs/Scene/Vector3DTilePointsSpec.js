@@ -68,7 +68,8 @@ defineSuite([
         },
         tileset : {
             ellipsoid : Ellipsoid.WGS84
-        }
+        },
+        getFeature : function(id) { return { batchId : id }; }
     };
 
     beforeEach(function() {
@@ -153,7 +154,7 @@ defineSuite([
         return loadPoints(points).then(function() {
             var features = [];
             points.createFeatures(mockTileset, features);
-            points.applyStyle(scene.frameState, undefined, features);
+            points.applyStyle(undefined, features);
 
             scene.camera.lookAt(Cartesian3.fromDegrees(0.0, 0.0, 10.0), new Cartesian3(0.0, 0.0, 50.0));
             expect(scene).toRender([255, 255, 255, 255]);
@@ -187,7 +188,7 @@ defineSuite([
         return loadPoints(points).then(function() {
             var features = [];
             points.createFeatures(mockTileset, features);
-            points.applyStyle(scene.frameState, style, features);
+            points.applyStyle(style, features);
 
             for (var i = 0; i < cartoPositions.length; ++i) {
                 var position = ellipsoid.cartographicToCartesian(cartoPositions[i]);
@@ -209,7 +210,6 @@ defineSuite([
         var positions = encodePositions(rectangle, minHeight, maxHeight, cartoPositions);
 
         var batchTable = new Cesium3DTileBatchTable(mockTileset, 1);
-        batchTable.update(mockTileset, scene.frameState);
 
         points = scene.primitives.add(new Vector3DTilePoints({
             positions : positions,
@@ -224,7 +224,9 @@ defineSuite([
 
             var features = [];
             points.createFeatures(mockTileset, features);
-            points.applyStyle(scene.frameState, undefined, features);
+            points.applyStyle(undefined, features);
+
+            var getFeature = mockTileset.getFeature;
             mockTileset.getFeature = function(index) {
                 return features[index];
             };
@@ -236,7 +238,7 @@ defineSuite([
             });
             scene.frameState.passes.pick = false;
 
-            mockTileset.getFeature = undefined;
+            mockTileset.getFeature = getFeature;
         });
     });
 
@@ -295,7 +297,7 @@ defineSuite([
         return loadPoints(points).then(function() {
             var features = [];
             points.createFeatures(mockTileset, features);
-            points.applyStyle(scene.frameState, style, features);
+            points.applyStyle(style, features);
 
             var i;
             for (i = 0; i < features.length; ++i) {
@@ -365,7 +367,7 @@ defineSuite([
         return loadPoints(points).then(function() {
             var features = [];
             points.createFeatures(mockTileset, features);
-            points.applyStyle(scene.frameState, style, features);
+            points.applyStyle(style, features);
 
             var collection = points._billboardCollection;
             expect(collection.length).toEqual(1);
@@ -411,7 +413,7 @@ defineSuite([
         return loadPoints(points).then(function() {
             var features = [];
             points.createFeatures(mockTileset, features);
-            points.applyStyle(scene.frameState, style, features);
+            points.applyStyle(style, features);
             points.applyDebugSettings(true, Color.YELLOW);
 
             var i;
